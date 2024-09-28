@@ -28,7 +28,17 @@ export const deleteExpiredTokens = async (c: Context, prisma: any, userId: strin
         }
       })
     )).filter(token => token !== null);
-
+    if (validTokens.length > 3) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          tokens: []
+        }
+      });
+      return c.json({
+        message: "Can not login into more than 3 devices",
+      })
+    }
     await prisma.user.update({
       where: { id: userId },
       data: { tokens: validTokens }

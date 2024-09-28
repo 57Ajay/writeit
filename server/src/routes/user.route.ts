@@ -4,7 +4,7 @@ import { authenticate } from "../middlewares/auth.middleware";
 
 const userRoute = new Hono();
 
-userRoute.post("/signin", authenticate, signIn);
+userRoute.post("/signin", signIn);
 userRoute.post("/signup", signUp);
 userRoute.get("/user", authenticate, getUser);
 export default userRoute;
