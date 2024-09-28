@@ -1,29 +1,33 @@
-import createPrismaClient from "../../prisma/prisma";
+import { Context } from "hono";
+import { sign } from "hono/jwt";
+import { HTTPException } from "hono/http-exception";
 
-const generateRandomString = (length: number): string => {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@$&-_';
-  const charactersLength = characters.length;
-  let result = '';
-  const randomValues = new Uint8Array(length);
-  crypto.getRandomValues(randomValues);
-  for (let i = 0; i < length; i++) {
-    result += characters.charAt(randomValues[i] % charactersLength);
-  }
-  return result;
-}
+export const generateToken = async (userId: string, c: Context, prisma: any) => {
+  try {
 
-export const generateToken = async (userId: string, dbUrl: string) => {
-  const prisma = createPrismaClient(dbUrl);
-  const tokenVal = `${generateRandomString(64)}${userId}`;
-  const tokenExpiry = new Date(Date.now() + 10800000); // 3 hours from now
-  const tokenData: any = {
-    value: tokenVal,
-    expiresAt: tokenExpiry,
-    userId: userId
-  }
-  const token = await prisma.token.create({
-    data: tokenData
-  });
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new HTTPException(404, { message: "User not found." });
+    }
+    const expirationTime = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60;
+    const tokenVal = await sign({ id: userId, exp: expirationTime }, c.env.JWT_SECRET);
 
-  return token;
-}
+    await prisma.user.update({
+      where: { id: userId },
+      data: { tokens: { push: tokenVal.toString() } },
+    });
+
+    return tokenVal;
+
+  } catch (error: any) {
+    if (error instanceof HTTPException) {
+      return new HTTPException(500, { message: `Something went wrong, can not generate token.: ${error.message}` });
+    } else {
+      console.log(error);
+      return c.json({
+        msg: "Token not generated",
+        error: error.message
+      })
+    };
+  };
+};

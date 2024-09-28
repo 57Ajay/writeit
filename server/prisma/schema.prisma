@@ -16,18 +16,8 @@ model User {
   name     String?
   password String
   posts    Post[]
-  tokens   Token[]
+  tokens   String[]
 }
-
-model Token {
-  id         String    @id @default(uuid())
-  value      String
-  userId     String
-  createdAt  DateTime  @default(now())
-  expiresAt  DateTime
-  user       User      @relation(fields: [userId], references: [id])
-}
-
 model Post {
   id        String   @id @default(uuid())
   title     String

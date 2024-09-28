@@ -4,6 +4,7 @@ import { HTTPException } from "hono/http-exception";
 import bcrypt from 'bcryptjs';
 import createPrismaClient from "../../prisma/prisma";
 import { generateToken } from "../utils/generateToken";
+import { deleteExpiredTokens } from "../utils/deleteExpiredTokens";
 
 
 const signUpSchema = z.object({
@@ -62,9 +63,10 @@ export const signUp = async (c: Context) => {
   }
 };
 
+
 const signInSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6)
+  password: z.string()
 });
 
 type signInInput = z.infer<typeof signInSchema>;
@@ -72,47 +74,82 @@ type signInInput = z.infer<typeof signInSchema>;
 export const signIn = async (c: Context) => {
   const prisma = createPrismaClient(c.env.DATABASE_URL);
   let input: signInInput;
-
   try {
     input = signInSchema.parse(await c.req.json());
-
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       throw new HTTPException(400, { message: error.message });
-    };
+    }
     throw new HTTPException(400, { message: "Invalid input" });
-  };
+  }
 
   const { email, password } = input;
+
   try {
     const user = await prisma.user.findUnique({
-      where: {
-        email
-      }
+      where: { email }
     });
+
     if (!user) {
-      return new HTTPException(400, { message: "User not found" })
-    };
+      throw new HTTPException(400, { message: "User not found" });
+    }
+
     const matchPassword = await bcrypt.compare(password, user.password);
     if (!matchPassword) {
-      return new HTTPException(403, { message: "Invalid password" });
-    };
-    await generateToken(user.id, c.env.DATABASE_URL);
+      throw new HTTPException(403, { message: "Invalid password" });
+    }
+    const deletedTokens = await deleteExpiredTokens(c, prisma, user.id);
+
+    const token = await generateToken(user.id, c, prisma);
+
     return c.json({
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
-        tokens: user.tokens
-      }
-    }, 200)
+        token
+      },
+      deletedTokens
+    }, 200);
+
   } catch (error) {
-    console.error('SignIp error:', error);
+    console.error('SignIn error:', error);
     if (error instanceof HTTPException) {
       throw error;
     }
-    throw new HTTPException(500, { message: 'An error occurred during sigin' });
-
+    throw new HTTPException(500, { message: 'An error occurred during signin' });
   }
-}
+};
+
+export const getUser = async (c: Context) => {
+  try {
+    const prisma = await createPrismaClient(c.env.DATABASE_URL);
+    const user = c.get('user');
+    const userId = user.id;
+
+    const findUser = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        posts: true,
+      },
+    });
+
+    if (!findUser) {
+      throw new HTTPException(404, { message: 'User not found' });
+    }
+
+    return c.json({
+      message: 'Access granted',
+      findUser,
+    }, 200);
+  } catch (error: any) {
+    console.error(error);
+    throw new HTTPException(500, { message: 'Internal Server Error' });
+  };
+};
 
