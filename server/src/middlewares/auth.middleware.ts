@@ -2,7 +2,6 @@ import { Context, Next } from "hono";
 import createPrismaClient from "../../prisma/prisma";
 import { HTTPException } from "hono/http-exception";
 import { verify } from "hono/jwt";
-
 export const authenticate = async (c: Context, next: Next) => {
   try {
     const token = c.req.header("Authorization");
