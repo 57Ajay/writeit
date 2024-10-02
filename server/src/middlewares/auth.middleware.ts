@@ -2,6 +2,8 @@ import { Context, Next } from "hono";
 import createPrismaClient from "../../prisma/prisma";
 import { HTTPException } from "hono/http-exception";
 import { verify } from "hono/jwt";
+import { createMiddleware } from "hono/factory";
+
 export const authenticate = async (c: Context, next: Next) => {
   try {
     const token = c.req.header("Authorization");
@@ -45,3 +47,9 @@ export const authenticate = async (c: Context, next: Next) => {
     throw new HTTPException(500, { message: "Internal server error during authentication." });
   }
 };
+
+export const prismaClientMiddleware = createMiddleware(async (c, next) => {
+  const prisma = await createPrismaClient(c.env.DATABASE_URL);
+  c.set("prisma", prisma);
+  await next();
+});

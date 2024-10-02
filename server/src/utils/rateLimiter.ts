@@ -30,7 +30,7 @@ const getClientIP = (c: Context): string | null => {
   }
 
 
-  return c.req.raw.headers.get('CF-Connecting-IP') || '127.0.0.1';
+  return c.req.raw.headers.get('CF-Connecting-IP') || null;
 };
 
 

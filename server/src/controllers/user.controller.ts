@@ -2,7 +2,6 @@ import { Context } from "hono";
 import { z } from "zod";
 import { HTTPException } from "hono/http-exception";
 import bcrypt from 'bcryptjs';
-import createPrismaClient from "../../prisma/prisma";
 import { generateToken } from "../utils/generateToken";
 import { deleteExpiredTokens } from "../utils/deleteExpiredTokens";
 
@@ -16,7 +15,7 @@ const signUpSchema = z.object({
 type SignUpInput = z.infer<typeof signUpSchema>;
 
 export const signUp = async (c: Context) => {
-  const prisma = createPrismaClient(c.env.DATABASE_URL)
+  const prisma = c.get("prisma")
   let input: SignUpInput;
 
   try {
@@ -72,7 +71,8 @@ const signInSchema = z.object({
 type signInInput = z.infer<typeof signInSchema>;
 
 export const signIn = async (c: Context) => {
-  const prisma = createPrismaClient(c.env.DATABASE_URL);
+  const prisma = c.get("prisma");
+
   let input: signInInput;
   try {
     input = signInSchema.parse(await c.req.json());
@@ -123,7 +123,7 @@ export const signIn = async (c: Context) => {
 
 export const getUser = async (c: Context) => {
   try {
-    const prisma = await createPrismaClient(c.env.DATABASE_URL);
+    const prisma = c.get("prisma")
     const user = c.get('user');
     const userId = user.id;
 
@@ -153,3 +153,28 @@ export const getUser = async (c: Context) => {
   };
 };
 
+export const getUserById = async (c: Context) => {
+  try {
+    const id = c.req.param("id");
+    const prisma = c.get("prisma");
+    const user = await prisma.user.findUnique({
+      where: {
+        id: id
+      }
+    })
+    return c.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        token: user.tokens[0]
+      }
+    })
+  } catch (error: any) {
+    if (error instanceof HTTPException) {
+      throw new HTTPException(500, { message: "Please inter valid userId " });
+    } else {
+      throw new HTTPException(500, { message: "Something went wrong." });
+    };
+  };
+};
