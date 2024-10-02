@@ -1,8 +1,9 @@
 import { PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
 
+const prisma = new PrismaClient().$extends(withAccelerate());
 
-type ExtendedPrismaClient = any;
+type ExtendedPrismaClient = typeof prisma;
 
 declare global {
   var prisma: ExtendedPrismaClient | undefined;
