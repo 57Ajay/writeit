@@ -6,7 +6,7 @@ import { rateLimiter } from "../utils/rateLimiter";
 const userRoute = new Hono();
 
 userRoute.post("/signin", rateLimiter(1, 5), signIn);
-userRoute.post("/signup", signUp);
-userRoute.get("/user", authenticate, getUser);
-userRoute.get("user/:id", authenticate, getUserById);
+userRoute.post("/signup", rateLimiter(1, 5), signUp);
+userRoute.get("/get-user", rateLimiter(1, 5), authenticate, getUser);
+userRoute.get("/:id", rateLimiter(1, 5), authenticate, getUserById);
 export default userRoute;
