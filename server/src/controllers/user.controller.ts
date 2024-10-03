@@ -4,7 +4,7 @@ import { HTTPException } from "hono/http-exception";
 import bcrypt from 'bcryptjs';
 import { generateToken } from "../utils/generateToken";
 import { deleteExpiredTokens } from "../utils/deleteExpiredTokens";
-
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 const signUpSchema = z.object({
   email: z.string().email(),
@@ -175,6 +175,54 @@ export const getUserById = async (c: Context) => {
       throw new HTTPException(500, { message: "Please inter valid userId " });
     } else {
       throw new HTTPException(500, { message: "Something went wrong." });
+    };
+  };
+};
+
+interface User {
+  id: string;
+  tokens: string[];
+}
+
+export const logOutUser = async (c: Context) => {
+  try {
+    const user = c.get("user") as User;
+    const prisma = c.get("prisma");
+
+    const currentUserToken = c.req.header("Authorization")?.split(" ")[1];
+    if (!currentUserToken) {
+      throw new HTTPException(401, { message: "No authorization token provided" });
+    }
+
+    if (!Array.isArray(user.tokens)) {
+      throw new HTTPException(500, { message: "User tokens data is invalid" });
+    }
+
+    const isTokenValid = user.tokens.includes(currentUserToken);
+    if (!isTokenValid) {
+      throw new HTTPException(401, { message: "Invalid or expired token" });
+    }
+
+    const validTokens = user.tokens.filter(token => token !== currentUserToken);
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: { tokens: validTokens },
+      select: { id: true, tokens: true }
+    });
+
+    return c.json({
+      success: true,
+      message: "Successfully logged out",
+      data: { userId: updatedUser.id }
+    });
+
+  } catch (error: any) {
+    console.error('Logout error:', error);
+
+    if (error instanceof HTTPException) {
+      throw error;
+    } else {
+      throw new HTTPException(500, { message: "Internal server error" });
     };
   };
 };

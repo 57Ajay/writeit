@@ -53,3 +53,34 @@ export const createPost = async (c: Context) => {
   }
 };
 
+export const getBlog = async (c: Context) => {
+  const prisma = c.get("prisma");
+  try {
+    const id = c.req.param("id");
+    if (!id) {
+      throw new HTTPException(403, { message: "Please provide blog id" });
+    };
+
+    const post = await prisma.post.findUnique({
+      where: {
+        id
+      }
+    });
+
+    if (!post) {
+      throw new HTTPException(404, { message: "Blog not found." })
+    };
+
+    return c.json({
+      post
+    });
+  } catch (error: any) {
+    if (error instanceof HTTPException) {
+      console.log(error)
+      throw new HTTPException(411, { message: "Server failear, try again" });
+    } else {
+      console.log(error)
+      throw new HTTPException(500, { message: "Something went wrong, try aagain." });
+    };
+  };
+};

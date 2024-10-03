@@ -1,8 +1,8 @@
 import { Context, Next } from "hono";
-import createPrismaClient from "../../prisma/prisma";
 import { HTTPException } from "hono/http-exception";
 import { verify } from "hono/jwt";
 import { createMiddleware } from "hono/factory";
+import createPrismaClient from "../../prisma/prisma";
 
 export const authenticate = async (c: Context, next: Next) => {
   try {
@@ -18,7 +18,7 @@ export const authenticate = async (c: Context, next: Next) => {
     // console.log("THis is token from authenticate: \n", bearerToken);
     const currentTimestamp = Math.floor(Date.now() / 1000);
 
-    const prisma = await createPrismaClient(c.env.DATABASE_URL);
+    const prisma = c.get("prisma");
     const payload = await verify(bearerToken, c.env.JWT_SECRET);
 
     if (!payload.exp) {
