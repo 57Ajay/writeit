@@ -49,7 +49,7 @@ export const authenticate = async (c: Context, next: Next) => {
 };
 
 export const prismaClientMiddleware = createMiddleware(async (c, next) => {
-  const prisma = await createPrismaClient(c.env.DATABASE_URL);
+  const prisma = createPrismaClient(c.env.DATABASE_URL);
   c.set("prisma", prisma);
   await next();
 });
