@@ -4,7 +4,6 @@ import { HTTPException } from "hono/http-exception";
 import bcrypt from 'bcryptjs';
 import { generateToken } from "../utils/generateToken";
 import { deleteExpiredTokens } from "../utils/deleteExpiredTokens";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 const signUpSchema = z.object({
   email: z.string().email(),
