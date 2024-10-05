@@ -40,7 +40,7 @@ export default function SignInPage() {
         title: "Sign In Successful",
         description: `Welcome back, ${response.data.name}!`,
       });
-      router.push("/home")
+      router.push("/blog")
     } catch (err) {
 
       let errorMessage = "Sign-in failed";

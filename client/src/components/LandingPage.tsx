@@ -1,7 +1,27 @@
+'use client'
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { useAppSelector } from "@/redux/hooks"
+import { useRouter } from "next/navigation"
 
 export default function LandingPage() {
+  const user = useAppSelector((state) => state.user.user);
+  const router = useRouter();
+  if (user.name !== "") {
+    setTimeout(() => {
+      router.push('/home')
+    }, 500);
+
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center font-semibold text-5xl text-red-500">
+          Redirecting to Profile....
+        </div>
+      </div>
+    );
+
+  }
   return (
     <div className="flex flex-col min-h-screen mt-5">
       <main className="flex-1">

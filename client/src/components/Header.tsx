@@ -7,10 +7,11 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ModeToggle } from "@/components/ModeToggle"
+import { useAppSelector } from "@/redux/hooks"
 
 const navItems = [
-  { href: "/", label: "Home" },
-  { href: "/blog", label: "Blog" },
+  { href: "/home", label: "Home" },
+  { href: "/blog", label: "Blogs" },
   { href: "/about", label: "About" },
 ]
 
@@ -18,6 +19,7 @@ export function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
+  const user = useAppSelector((state) => state.user.user);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -58,12 +60,22 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/user/signin">Sign In</Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link href="/user/signup">Sign Up</Link>
-            </Button>
+            {user.name !== "" ?
+              <>
+                <Button asChild size="sm">
+                  <Link href="/user/signout">Sign out</Link>
+                </Button>
+              </> :
+              <>
+                <Button asChild variant="ghost" size="sm">
+                  <Link href="/user/signin">Sign In</Link>
+                </Button>
+                <Button asChild size="sm">
+                  <Link href="/user/signup">Sign Up</Link>
+                </Button>
+              </>
+            }
+
             <ModeToggle />
           </nav>
 
@@ -107,12 +119,18 @@ export function Header() {
                   {item.label}
                 </Link>
               ))}
-              <Button asChild variant="ghost" className="justify-start bg-blue-500 font-semibold" onClick={() => setIsMobileMenuOpen(false)}>
-                <Link href="/user/signin">Sign In</Link>
-              </Button>
-              <Button asChild className="justify-start" onClick={() => setIsMobileMenuOpen(false)}>
-                <Link href="/user/signup">Sign Up</Link>
-              </Button>
+              {user.name === "" ?
+                <>
+                  <Button asChild variant="ghost" className="justify-start bg-blue-500 font-semibold" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Link href="/user/signin">Sign In</Link>
+                  </Button>
+                  <Button asChild className="justify-start" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Link href="/user/signup">Sign Up</Link>
+                  </Button>
+                </> :
+                <>
+                  <Button asChild className="font-semibold bg-blue-500 hover:bg-red-500" onClick={() => setIsMobileMenuOpen(false)}><Link href={"/user/signout"}>Sign Out</Link></Button>
+                </>}
             </nav>
           </motion.div>
         )}
