@@ -1,5 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
+
+
 export interface User {
   user: {
     id: string;
@@ -12,7 +14,7 @@ export interface User {
     remainingTokens: number;
   };
   util: {
-    error: any;
+    error: Error;
     loading: boolean;
   };
 }
@@ -29,7 +31,7 @@ const initialState: User = {
     remainingTokens: 0,
   },
   util: {
-    error: null,
+    error: Error(""),
     loading: false,
   },
 };
@@ -54,7 +56,7 @@ const userSlice = createSlice({
         remainingTokens: action.payload.deletedTokens.remainingTokens,
       };
       state.util.loading = false;
-      state.util.error = null;
+      state.util.error = Error("");
     },
     signInFailure: (state, action) => {
       state.util.loading = false;
@@ -73,15 +75,15 @@ const userSlice = createSlice({
         remainingTokens: 0,
       };
       state.util.loading = false;
-      state.util.error = null;
+      state.util.error = Error("");
     },
     signUpStart(state) {
       state.util.loading = true;
-      state.util.error = null;
+      state.util.error = Error("");
     },
     signUpSuccess(state) {
       state.util.loading = false;
-      state.util.error = null;
+      state.util.error = Error("");
     },
     signUpFailure(state, action) {
       state.util.loading = false;

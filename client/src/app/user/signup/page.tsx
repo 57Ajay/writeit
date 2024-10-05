@@ -51,7 +51,7 @@ export default function SignUpPage() {
     <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
       <div className="p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md w-full max-w-md">
         <h1 className="text-2xl font-bold mb-6 text-center">Sign Up for StoryArc</h1>
-        <p className="text-center text-red-500 font-bold">{error ? error : ""}</p>
+        <p className="text-center text-red-500 font-bold">{error ? error.message : ""}</p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>

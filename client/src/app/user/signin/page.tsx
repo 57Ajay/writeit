@@ -90,7 +90,7 @@ export default function SignInPage() {
             {loading ? "Signing In..." : "Sign In"}
           </Button>
         </form>
-        {error && <p className="mt-4 text-red-500 text-center">{error}</p>}
+        {error && <p className="mt-4 text-red-500 text-center">{error.message}</p>}
         <p className="mt-4 text-center text-sm">
           {`Don't`} have an account?{" "}
           <Link href="/user/signup" className="text-blue-500 hover:underline">
