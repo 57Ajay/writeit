@@ -1,7 +1,6 @@
 "use client"
-
-import { useState } from "react"
-import { redirect, useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import axios from "axios"
 import { useAppSelector } from "@/redux/hooks"
@@ -16,16 +15,31 @@ export default function CreateBlogPage() {
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [countdown, setCountdown] = useState(5)
   const router = useRouter()
   const { toast } = useToast()
   const user = useAppSelector((state) => state.user.user)
-  if (!user) {
-    redirect("/")
-  }
+
+  useEffect(() => {
+    if (user.name === "") {
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer)
+            router.push('/')
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+
+      return () => clearInterval(timer)
+    }
+  }, [user.name, router])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-
     try {
       const response = await axios.post(
         "https://server.57ajay-u.workers.dev/api/v1/blog/create",
@@ -36,7 +50,6 @@ export default function CreateBlogPage() {
           },
         }
       )
-
       if (response.data && response.data.post) {
         toast({
           title: "Success",
@@ -56,6 +69,30 @@ export default function CreateBlogPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (user.name === "") {
+    return (
+      <div className="container mx-auto px-4 py-8 mt-12">
+        <Card className="max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold">Authentication Required</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p>Please sign in or create an account to create a blog post.</p>
+            <p className="text-sm text-gray-500">Redirecting to home in {countdown} seconds...</p>
+            <div className="flex gap-4">
+              <Button onClick={() => router.push('/user/signin')} variant="default">
+                Sign In
+              </Button>
+              <Button onClick={() => router.push('/user/signup')} variant="outline">
+                Sign Up
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
