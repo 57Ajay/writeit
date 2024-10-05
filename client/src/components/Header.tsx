@@ -12,6 +12,7 @@ import { useAppSelector } from "@/redux/hooks"
 const navItems = [
   { href: "/home", label: "Home" },
   { href: "/blog", label: "Blogs" },
+  { href: "/create-blog", label: "Create blog" },
   { href: "/about", label: "About" },
 ]
 
