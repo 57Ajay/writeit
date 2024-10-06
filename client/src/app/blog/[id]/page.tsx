@@ -10,6 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Avatar } from "@/components/ui/avatar"
 import { CalendarIcon, UserIcon } from "lucide-react"
 import { useAppSelector } from "@/redux/hooks"
+import Link from "next/link"
+
 interface BlogPost {
   post: {
     id: string
@@ -53,14 +55,23 @@ export default function BlogPostPage() {
   //   return new Date(dateString).toLocaleDateString(undefined, options)
   // }
   //
+
+  const handleGoBack = () => {
+    if (window.history.length > 1) {
+      router.back()
+    } else {
+      router.push('/blog')
+    }
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 mt-12">
       <Button
         variant="outline"
-        onClick={() => router.push("/home")}
+        onClick={handleGoBack}
         className="mb-4"
       >
-        ← Back to Profile
+        ← Back
       </Button>
       {isLoading ? (
         <Card className="w-full">
@@ -87,7 +98,8 @@ export default function BlogPostPage() {
                   <CardTitle className="text-3xl font-bold">{blog.post.title}</CardTitle>
                   {user.id === blog.post.authorId ?
                     <Button onClick={() => router.push(`/blog/edit/${blog.post.id}`)} className="p-3 px-4">Edit</Button>
-                    : ""}
+                    : <Button className="bg-slate-300 text-2xl"><Link href={`/blog/user/${blog.post.authorId}`}>Author</Link></Button>
+                  }
                 </div>
                 <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center mt-5">

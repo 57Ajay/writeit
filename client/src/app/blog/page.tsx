@@ -104,7 +104,7 @@ export default function BlogPage() {
                       <CardTitle>{blog.title}</CardTitle>
                       {user.id === blog.authorId ?
                         <Button><Link href={`/blog/edit/${blog.id}`}>Edit</Link></Button> :
-                        ""
+                        <Button><Link href={`/blog/user/${blog.authorId}`}>Author</Link></Button>
                       }
                     </div>
 
