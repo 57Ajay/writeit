@@ -57,7 +57,7 @@ export default function BlogPage() {
   const handleReadMore = (blogId: string) => {
     router.push(`/blog/${blogId}`)
   }
-
+  console.log("This is blogs: \n", blogs)
   return (
     <div className="container mx-auto px-4 py-8 mt-12">
       <h1 className="text-3xl font-bold mb-8 text-center">Latest Blog Posts</h1>
@@ -110,7 +110,7 @@ export default function BlogPage() {
 
                   </CardHeader>
                   <CardContent>
-                    <p className="text-muted-foreground">{blog.content.substring(0, 150)}...</p>
+                    <p className="text-muted-foreground">{blog.content.content}...</p>
                   </CardContent>
                   <CardFooter className="flex justify-between">
                     <span className="text-sm text-muted-foreground">
