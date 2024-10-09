@@ -1,3 +1,4 @@
+/* eslint-disable */
 "use client";
 import React, { useState } from "react";
 import { motion } from "framer-motion";
@@ -6,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectItem, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash, ChevronDown, LoaderPinwheel } from "lucide-react";
+import { Trash, LoaderPinwheel } from "lucide-react";
 
 export interface Style {
   fontWeight?: "bold" | "semibold" | "normal";

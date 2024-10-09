@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { ArrowLeft, Save, Eye } from 'lucide-react';
+import { ArrowLeft, Eye } from 'lucide-react';
 
 interface BlogContent {
   id: number;

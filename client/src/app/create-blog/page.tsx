@@ -9,7 +9,7 @@ import { useAppSelector } from '@/redux/hooks';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 export default function CreateBlogPage() {
   const user = useAppSelector((state) => state.user.user);
