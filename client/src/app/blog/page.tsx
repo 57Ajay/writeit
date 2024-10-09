@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -57,7 +58,7 @@ export default function BlogsPage() {
   useEffect(() => {
     fetchBlogs(currentPage)
     setCurrentUserId(user.id)
-  }, [currentPage])
+  }, [currentPage, user.id])
 
   const fetchBlogs = async (page: number) => {
     try {
