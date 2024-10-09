@@ -10,10 +10,21 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
 
+interface BlogContentBlock {
+  id: number
+  text: string
+  type: string
+  style: {
+    color: string
+    textSize: string
+    fontWeight: string
+  }
+}
+
 interface BlogPost {
   id: string
   title: string
-  content: string
+  content: BlogContentBlock[]
   published: boolean
   authorId: string
 }
@@ -53,6 +64,35 @@ export default function UserBlogsPage() {
       fetchUserBlogs()
     }
   }, [id, toast])
+
+  const renderContent = (content: BlogContentBlock[]) => {
+    return content.map((block) => {
+      const { color, textSize, fontWeight } = block.style
+
+      switch (block.type) {
+        case "h1":
+          return (
+            <h1
+              key={block.id}
+              className={`${color} ${textSize} ${fontWeight} mb-4`}
+            >
+              {block.text}
+            </h1>
+          )
+        case "p":
+          return (
+            <p
+              key={block.id}
+              className={`${color} ${textSize} ${fontWeight} mb-2`}
+            >
+              {block.text}
+            </p>
+          )
+        default:
+          return null
+      }
+    })
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 mt-12">
@@ -94,7 +134,9 @@ export default function UserBlogsPage() {
                     <CardTitle className="text-xl font-semibold line-clamp-2">{blog.title}</CardTitle>
                   </CardHeader>
                   <CardContent className="flex-grow">
-                    <p className="text-sm text-muted-foreground line-clamp-3">{blog.content}</p>
+                    <div className="text-sm text-muted-foreground line-clamp-3">
+                      {renderContent(blog.content)}
+                    </div>
                   </CardContent>
                   <CardFooter className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">

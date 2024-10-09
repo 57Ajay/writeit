@@ -5,6 +5,7 @@ import { ReduxProvider } from "@/redux/ReduxProvider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/Header";
 import { ReduxPersistProvider } from "@/redux/ReduxPersistProvider";
+import { Toaster } from "@/components/ui/toaster"
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
@@ -41,6 +42,7 @@ export default function RootLayout({
             <ReduxPersistProvider>
               <Header />
               {children}
+              <Toaster />
             </ReduxPersistProvider>
           </ReduxProvider>
         </ThemeProvider>
