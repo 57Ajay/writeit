@@ -59,7 +59,7 @@ const Page = () => {
         <section className="mb-12">
           <h2 className="text-2xl md:text-3xl font-semibold mb-4">About the Project</h2>
           <p className="text-lg">
-            This blogging application is a project developed by Ajay Upadhyay (that is me.), a CSE undergraduate student. It showcases modern web development techniques and technologies, providing a robust platform for creating and managing blog content.
+            This blogging application is a project developed by Ajay Upadhyay, a CSE undergraduate student. It showcases modern web development techniques and technologies, providing a robust platform for creating and managing blog content.
           </p>
         </section>
 
