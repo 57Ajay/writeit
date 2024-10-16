@@ -2,53 +2,57 @@ import { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { z, ZodError } from 'zod';
 
-const postSchema = z.object({
-  title: z.string().min(3),
-  content: z.string().min(10)
+const createBlogSchema = z.object({
+  title: z.string().min(1).max(200).trim(),
+  content: z.string(),
+  published: z.boolean().default(false)
 });
 
-type postBody = z.infer<typeof postSchema>;
-
 export const createPost = async (c: Context) => {
-  const user = c.get("user");
-  let post: postBody;
-  if (!user) {
-    throw new HTTPException(403, { message: "Log in to create a post." })
-  }
   const prisma = c.get("prisma");
+  const user = c.get("user");
+
   try {
-    post = postSchema.parse(await c.req.json());
-  } catch (error: any) {
-    console.error(error);
-    if (error instanceof HTTPException) {
-      throw new HTTPException(500, { message: "Wrong request body" })
-    } else if (error instanceof ZodError) {
-      throw new HTTPException(400, { message: `Please provide correct Schema: ${error.message}` })
-    } else {
-      throw new HTTPException(500, { message: "Something went wrong." })
-    };
-  };
-  const { title, content } = post;
-  try {
-    const post = await prisma.post.create({
+    const result = createBlogSchema.safeParse(await c.req.json());
+
+    if (!result.success) {
+      throw new HTTPException(400, { message: "Invalid blog data" });
+    }
+
+    const { title, content, published } = result.data;
+    console.log("title: \n", title, "\ncontent: \n", content);
+    const blog = await prisma.post.create({
       data: {
-        title, content, authorId: user.id
-      }
+        title,
+        content,
+        published,
+        authorId: user.id,
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
     });
-    if (!post) {
-      throw new HTTPException(404, { message: "failed to create post." })
-    };
 
     return c.json({
-      post
-    })
-
-  } catch (error) {
-    console.error(error);
+      blog,
+    });
+  } catch (error: any) {
     if (error instanceof HTTPException) {
-      throw new HTTPException(500, { message: "Cannot createPost, try again later." })
+      console.log(error);
+      throw new HTTPException(400, { message: error.message });
+    } else if (error instanceof ZodError) {
+      console.log(error);
+      throw new HTTPException(400, { message: error.message });
     } else {
-      throw new HTTPException(500, { message: "Something went wrong" })
+      console.log(error);
+      throw new HTTPException(500, {
+        message: "Something went wrong, try again.",
+      });
     }
   }
 };
@@ -64,6 +68,14 @@ export const getBlog = async (c: Context) => {
     const post = await prisma.post.findUnique({
       where: {
         id
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
       }
     });
 
@@ -96,7 +108,15 @@ export const getAllBlogs = async (c: Context) => {
 
     const posts = await prisma.post.findMany({
       skip,
-      take
+      take,
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
     });
 
     // console.log("these are blogs: \n", blogs);
@@ -120,43 +140,88 @@ export const getAllBlogs = async (c: Context) => {
   }
 };
 
+const updateBlogSchema = z.object({
+  title: z.string().min(1).max(200).trim().optional(),
+  content: z.string().optional(),
+  published: z.boolean().optional()
+}).refine(data => Object.keys(data).length > 0, {
+  message: "At least one field must be provided for update",
+});
 
 export const updateBlogPost = async (c: Context) => {
-  let input: postBody;
-  const user = c.get("user");
+  console.log("Request Reached here");
   const prisma = c.get("prisma");
+  const user = c.get("user");
 
-  const blogId = c.req.query("id");
-  if (!blogId) {
-    throw new HTTPException(401, { message: "please provide id as query parameter." })
-  };
   try {
-    input = postSchema.parse(await c.req.json());
-    const { title, content } = input;
-    const updateBlog = await prisma.post.update({
+    const postId = c.req.query("id");
+    console.log("PostId: \n", postId);
+    if (!postId) {
+      throw new HTTPException(400, { message: "Post ID is required" });
+    };
+
+    const existingPost = await prisma.post.findUnique({
       where: {
-        id: blogId, authorId: user.id
+        id: postId,
       },
-      data: {
-        title, content
-      }
+      select: {
+        authorId: true,
+      },
     });
-    if (!updateBlog) {
-      throw new HTTPException(404, { message: "Failed to update post, You can only update your own post" })
+
+    if (!existingPost) {
+      throw new HTTPException(404, { message: "Blog post not found" });
     }
-    return c.json({ updateBlog })
+
+    if (existingPost.authorId !== user.id) {
+      throw new HTTPException(403, { message: "You can only update your own posts" });
+    }
+
+    const result = updateBlogSchema.safeParse(await c.req.json());
+    if (!result.success) {
+      throw new HTTPException(400, { message: "Invalid update data" });
+    }
+
+    const updateData: any = {};
+    if (result.data.title) updateData.title = result.data.title;
+    if (result.data.content) updateData.content = result.data.content;
+    if (result.data.published !== undefined) updateData.published = result.data.published;
+    const updatedBlog = await prisma.post.update({
+      where: {
+        id: postId,
+      },
+      data: updateData,
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return c.json({
+      blog: updatedBlog,
+    });
   } catch (error: any) {
     if (error instanceof HTTPException) {
-      console.error(error);
-      throw new HTTPException(404, { message: "server unreachable." });
+      console.log(error);
+      throw error;
+    } else if (error instanceof ZodError) {
+      console.log(error);
+      throw new HTTPException(400, { message: error.message });
     } else {
-      if (error)
-        throw new HTTPException(500, { message: "You can only edit your own posts." })
-    };
-  };
+      console.log(error);
+      throw new HTTPException(500, {
+        message: "Something went wrong, try again.",
+      });
+    }
+  }
 };
 
 export const getBlogByUser = async (c: Context) => {
+  console.log("THis is hello from getBlogByUser.")
   const userId = c.req.query("id");
   if (!userId) {
     throw new HTTPException(403, { message: "userId not found" });
@@ -168,14 +233,25 @@ export const getBlogByUser = async (c: Context) => {
         id: userId
       }
     });
+    console.log("user: \n", user);
     if (user === null) {
       throw new HTTPException(403, { message: "Bad request" });
     };
     const userBlogs = await prisma.post.findMany({
       where: {
         authorId: userId
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true
+          }
+
+        }
       }
     });
+    console.log("user blogs: \n", userBlogs)
     if (!userBlogs) {
       throw new HTTPException(404, { message: "failed to find userBlogs" })
     };
@@ -193,6 +269,7 @@ export const getBlogByUser = async (c: Context) => {
 };
 
 export const deleteBlogs = async (c: Context) => {
+  console.log("Delete blogs hits`")
   try {
     const { blogIds } = await c.req.json();
     if (!blogIds) {
