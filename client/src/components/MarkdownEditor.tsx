@@ -5,7 +5,7 @@ import { useTheme } from 'next-themes'
 import { Editor } from '@monaco-editor/react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Bold, Italic, List, ListOrdered, Image, Link, Eye } from 'lucide-react'
+import { Bold, Italic, List, ListOrdered, Link, Eye } from 'lucide-react'
 import MarkdownDisplay from './MarkdownDisplay'
 
 interface MarkdownEditorProps {
@@ -31,7 +31,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({ initialValue, onSave })
     { icon: <Italic size={18} />, markdown: '*Italic*', label: 'Italic' },
     { icon: <List size={18} />, markdown: '\n- List item', label: 'Unordered List' },
     { icon: <ListOrdered size={18} />, markdown: '\n1. List item', label: 'Ordered List' },
-    { icon: <Image size={18} />, markdown: '![Alt text](image-url)', label: 'Image' },
+    // { icon: <Image size={18} />, markdown: '![Alt text](image-url)', label: 'Image' },
     { icon: <Link size={18} />, markdown: '[Link text](url)', label: 'Link' },
   ]
 

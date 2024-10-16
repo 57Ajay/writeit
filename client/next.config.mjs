@@ -9,15 +9,6 @@ const nextConfig = {
       }))
     }
     return config
-  },
-  images: {
-    domains: ["*"],
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-      }
-    ]
   }
 }
 

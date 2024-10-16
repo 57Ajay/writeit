@@ -10,6 +10,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
+import MarkdownDisplay from "@/components/MarkdownDisplay";  // Import MarkdownDisplay component
 
 interface UserBlog {
   id: string;
@@ -60,7 +61,6 @@ export default function HomePage() {
 
     fetchUserBlogs();
   }, [router, user.id, user.token]);
-
 
   if (!user.token) {
     return null;
@@ -116,17 +116,20 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <Card>
+                <Card className="h-64"> {/* Square card with a fixed height */}
                   <CardHeader>
-                    <div className="flex grid-cols-2 justify-between">
+                    <div className="flex justify-between">
                       <CardTitle>{blog.title}</CardTitle>
-                      <Button><Link href={`/blog/edit/${blog.id}`}>Edit</Link></Button>
+                      <Button>
+                        <Link href={`/blog/edit/${blog.id}`}>Edit</Link>
+                      </Button>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      {blog.content.length > 100 ? `${blog.content.substring(0, 100)}...` : blog.content}
-                    </p>
+                    {/* Truncated content with a max height */}
+                    <div className="max-h-32 overflow-hidden">
+                      <MarkdownDisplay content={blog.content.substring(0, 100) + '...'} /> {/* Show only a preview */}
+                    </div>
                   </CardContent>
                   <CardFooter className="flex justify-between">
                     <span className="text-sm text-muted-foreground">
@@ -159,7 +162,6 @@ export default function HomePage() {
             </Link>
           </Button>
         </div>
-
       </motion.div>
     </div>
   );

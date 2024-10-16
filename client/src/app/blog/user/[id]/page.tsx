@@ -43,7 +43,7 @@ const UserBlogsPage: React.FC = () => {
     };
 
     fetchBlogs();
-  }, []);
+  }, [id]);
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;

@@ -9,7 +9,7 @@ import { useAppSelector } from '@/redux/hooks'
 import MarkdownDisplay from '@/components/MarkdownDisplay'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Edit, Loader2 } from 'lucide-react'
+import { Edit } from 'lucide-react'
 
 interface BlogPost {
   id: string

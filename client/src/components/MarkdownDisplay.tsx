@@ -17,10 +17,11 @@ const MarkdownDisplay: React.FC<MarkdownDisplayProps> = ({ content }) => {
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
-        code({ node, inline, className, children, ...props }: CodeProp) {
+        code({ inline, className, children, ...props }: CodeProp) {
           const match = /language-(\w+)/.exec(className || '')
           return !inline && match ? (
             <SyntaxHighlighter
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
               style={vscDarkPlus as any}
               language={match[1]}
               PreTag="div"
@@ -41,7 +42,6 @@ const MarkdownDisplay: React.FC<MarkdownDisplayProps> = ({ content }) => {
             width={500}
             height={300}
             className="rounded-lg my-4"
-            unoptimized={true}
           />
         ),
       }}
