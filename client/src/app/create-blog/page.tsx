@@ -1,84 +1,90 @@
-"use client";
+'use client'
 
-import React, { useState } from 'react';
-import axios from 'axios';
-import { BlogEditor, Blog } from '@/components/BlogEditor';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { useAppSelector } from '@/redux/hooks';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "@/hooks/use-toast";
-import { motion } from "framer-motion";
-import { ArrowLeft } from 'lucide-react';
+import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import axios from 'axios'
+import { motion } from 'framer-motion'
+import { useAppSelector } from '@/redux/hooks'
+import MarkdownEditor from '@/components/MarkdownEditor'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Loader2 } from 'lucide-react'
 
-export default function CreateBlogPage() {
-  const user = useAppSelector((state) => state.user.user);
-  const router = useRouter();
-  const [isCreating, setIsCreating] = useState(false);
+export default function CreateBlog() {
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+  const user = useAppSelector((state) => state.user.user)
 
-  const handleCreateBlog = async (data: Blog) => {
-    if (data.content.length === 0) {
-      toast({
-        title: "Error",
-        description: "Blog contents cannot be empty.",
-        variant: "destructive",
-      });
-      console.log("Fill other things")
-      return;
+  const handleCreateBlog = async () => {
+    if (!title || !content) {
+      alert('Please fill in both title and content')
+      return
     }
-    console.log("Creating blog:", data)
-    setIsCreating(true);
+
+    setIsLoading(true)
     try {
-      const res = await axios.post("https://server.57ajay-u.workers.dev/api/v1/blog/create", data, {
-        headers: {
-          "Authorization": `Bearer ${user.token}`,
+      const response = await axios.post(
+        'https://server.57ajay-u.workers.dev/api/v1/blog/create',
+        { title, content },
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
         }
-      });
-      console.log("Created blog:", res.data);
-      toast({
-        title: "Success",
-        description: "Blog created successfully!",
-      });
-      router.push(`/blog/${res.data.id}`);
+      )
+      router.push(`/blog/${response.data.blog.id}`)
     } catch (error) {
-      console.error("Error creating blog:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create blog. Please try again.",
-        variant: "destructive",
-      });
+      console.error('Error creating blog:', error)
+      alert('Failed to create blog. Please try again.')
     } finally {
-      setIsCreating(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="container mx-auto p-6 mt-12"
+      className="container mx-auto px-4 py-8 max-w-4xl"
     >
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardHeader>
-          <div className="flex justify-between items-center mb-6">
-            <CardTitle className="text-3xl font-bold">Create New Blog</CardTitle>
-            <div className="space-x-2">
-              <Button variant="outline" onClick={() => router.push('/blog')}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Blogs
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <BlogEditor
-            onSubmit={handleCreateBlog}
-            submitButtonText="Create Blog"
-            loading={isCreating}
+      <h1 className="text-3xl font-bold mb-6 mt-12">Create New Blog Post</h1>
+      <div className="space-y-6">
+        <div className="w-full">
+          <Label htmlFor="title" className="text-lg font-semibold">Title</Label>
+          <Input
+            id="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Enter your blog title"
+            className="mt-1 w-full"
           />
-        </CardContent>
-      </Card>
+        </div>
+        <div className="w-full">
+          <Label htmlFor="content" className="text-lg font-semibold">Content</Label>
+          <MarkdownEditor
+            initialValue={content}
+            onSave={(newContent) => setContent(newContent)}
+          />
+        </div>
+        <Button
+          onClick={handleCreateBlog}
+          disabled={isLoading}
+          className="w-full sm:w-auto"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            'Create Blog Post'
+          )}
+        </Button>
+      </div>
     </motion.div>
-  );
+  )
 }
