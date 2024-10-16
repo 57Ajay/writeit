@@ -1,276 +1,247 @@
-import React, { useState } from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
-import TextAlign from '@tiptap/extension-text-align';
-import { useAppSelector } from '@/redux/hooks';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Bold,
-  Italic,
-  Underline as UnderlineIcon,
-  Code,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignJustify,
-  Heading1,
-  Heading2,
-  List,
-  ListOrdered,
-  Quote,
-  Undo,
-  Redo,
-} from 'lucide-react';
-import { motion } from 'framer-motion';
-import { BlogContent, createBlog, updateBlog } from '../lib/blog-util';
+/* eslint-disable */
+"use client";
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { useForm, Controller } from "react-hook-form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Select, SelectItem, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Trash, LoaderPinwheel } from "lucide-react";
 
-interface BlogEditorProps {
-  initialBlog?: {
-    id: string;
-    title: string;
-    content: BlogContent;
-  };
-  onSuccess: (blog: {id: string}) => void;
+export interface Style {
+  fontWeight?: "bold" | "semibold" | "normal";
+  textSize?: "text-sm" | "text-md" | "text-lg";
+  color?: string;
 }
 
-export const BlogEditor: React.FC<BlogEditorProps> = ({ initialBlog, onSuccess }) => {
-  const user = useAppSelector((state) => state.user.user);
-  const [title, setTitle] = useState(initialBlog?.title || '');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export type ContentType = "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "p";
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Underline,
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-      }),
-    ],
-    content: initialBlog?.content || {
-      type: 'doc',
-      content: [{
-        type: 'paragraph',
-        content: [{ type: 'text', text: '' }]
-      }]
+export interface ContentBlock {
+  id: number;
+  type: ContentType;
+  style: Style;
+  text?: string;
+}
+
+export interface Blog {
+  id: string;
+  title: string;
+  content: any[];
+  published: boolean;
+  authorId: string;
+  createdAt: string;
+  updatedAt: string;
+  author: {
+    id: string;
+    name: string;
+  };
+}
+
+interface EditorProps {
+  initialData?: {
+    id: string;
+    title: string;
+    content: any[];
+  };
+  onSubmit: (data: Blog) => Promise<void>;
+  submitButtonText: string;
+  loading?: boolean;
+}
+
+const tailwindColors = [
+  "text-black", "text-white", "text-red-500", "text-blue-500", "text-green-500",
+  "text-yellow-500", "text-purple-500", "text-pink-500", "text-indigo-500",
+  "text-gray-500", "text-orange-500",
+];
+
+export const BlogEditor: React.FC<EditorProps> = ({
+  initialData,
+  onSubmit,
+  submitButtonText,
+  loading,
+}) => {
+  const { control, handleSubmit, watch, setValue } = useForm<Blog>({
+    defaultValues: initialData || {
+      title: "",
+      content: [],
     },
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editor) return;
+  const blogContent = watch("content");
+  const [colorSearch, setColorSearch] = useState<string>("");
 
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const content = editor.getJSON() as BlogContent;
-      let result;
-      
-      if (initialBlog) {
-        result = await updateBlog(
-          initialBlog.id,
-          { title, content },
-          user.token
-        );
-      } else {
-        result = await createBlog(title, content, user.token);
-      }
-
-      onSuccess(result);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setIsLoading(false);
-    }
+  const handleAddBlock = (type: ContentType) => {
+    const newBlock: ContentBlock = {
+      id: blogContent.length,
+      type,
+      style: {
+        fontWeight: "normal",
+        textSize: "text-md",
+        color: "text-black",
+      },
+      text: "",
+    };
+    setValue("content", [...blogContent, newBlock]);
   };
 
-  if (!editor) {
-    return null;
-  }
+  const handleChange = (id: number, field: keyof ContentBlock, value: any) => {
+    const updatedContent = blogContent.map((block) =>
+      block.id === id ? { ...block, [field]: value } : block
+    );
+    setValue("content", updatedContent);
+  };
+
+  const handleStyleChange = (id: number, styleKey: keyof Style, value: string) => {
+    const updatedContent = blogContent.map((block) =>
+      block.id === id ? {
+        ...block,
+        style: { ...block.style, [styleKey]: value }
+      } : block
+    );
+    setValue("content", updatedContent);
+  };
+
+  const handleDeleteBlock = (id: number) => {
+    setValue("content", blogContent.filter((block) => block.id !== id));
+  };
+
+  const filteredColors = tailwindColors.filter((color) =>
+    color.toLowerCase().includes(colorSearch.toLowerCase())
+  );
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Card className="w-full max-w-4xl mx-auto">
-        <form onSubmit={handleSubmit}>
-          <CardHeader>
-            <CardTitle>{initialBlog ? 'Edit Blog' : 'Create New Blog'}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <Input
-                  placeholder="Blog Title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="text-lg font-semibold"
-                />
-              </div>
-              
-              <div className="flex flex-wrap gap-2 mb-2">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => editor.chain().focus().undo().run()}
-                  disabled={!editor.can().undo()}
-                >
-                  <Undo className="h-4 w-4" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => editor.chain().focus().redo().run()}
-                  disabled={!editor.can().redo()}
-                >
-                  <Redo className="h-4 w-4" />
-                </Button>
-                <div className="border-l mx-2" />
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => editor.chain().focus().toggleBold().run()}
-                  data-active={editor.isActive('bold')}
-                >
-                  <Bold className="h-4 w-4" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => editor.chain().focus().toggleItalic().run()}
-                  data-active={editor.isActive('italic')}
-                >
-                  <Italic className="h-4 w-4" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => editor.chain().focus().toggleUnderline().run()}
-                  data-active={editor.isActive('underline')}
-                >
-                  <UnderlineIcon className="h-4 w-4" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => editor.chain().focus().toggleCode().run()}
-                  data-active={editor.isActive('code')}
-                >
-                  <Code className="h-4 w-4" />
-                </Button>
-                <div className="border-l mx-2" />
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => editor.chain().focus().setTextAlign('left').run()}
-                  data-active={editor.isActive({ textAlign: 'left' })}
-                >
-                  <AlignLeft className="h-4 w-4" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => editor.chain().focus().setTextAlign('center').run()}
-                  data-active={editor.isActive({ textAlign: 'center' })}
-                >
-                  <AlignCenter className="h-4 w-4" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => editor.chain().focus().setTextAlign('right').run()}
-                  data-active={editor.isActive({ textAlign: 'right' })}
-                >
-                  <AlignRight className="h-4 w-4" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => editor.chain().focus().setTextAlign('justify').run()}
-                  data-active={editor.isActive({ textAlign: 'justify' })}
-                >
-                  <AlignJustify className="h-4 w-4" />
-                </Button>
-                <div className="border-l mx-2" />
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-                  data-active={editor.isActive('heading', { level: 1 })}
-                >
-                  <Heading1 className="h-4 w-4" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-                  data-active={editor.isActive('heading', { level: 2 })}
-                >
-                  <Heading2 className="h-4 w-4" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => editor.chain().focus().toggleBulletList().run()}
-                  data-active={editor.isActive('bulletList')}
-                >
-                  <List className="h-4 w-4" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                  data-active={editor.isActive('orderedList')}
-                >
-                  <ListOrdered className="h-4 w-4" />
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => editor.chain().focus().toggleBlockquote().run()}
-                  data-active={editor.isActive('blockquote')}
-                >
-                  <Quote className="h-4 w-4" />
-                </Button>
-              </div>
-              
-              <div className="prose dark:prose-invert max-w-none">
-                <EditorContent editor={editor} />
-              </div>
-            </div>
-
-            {error && (
-              <p className="text-red-500 mt-2">{error}</p>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <Controller
+        name="title"
+        control={control}
+        rules={{ required: "Blog title is required" }}
+        render={({ field, fieldState }) => (
+          <div>
+            <Input
+              placeholder="Blog Title"
+              className={`w-full text-xl font-bold ${fieldState.invalid ? 'border-red-500' : ''}`}
+              {...field}
+            />
+            {fieldState.error && (
+              <p className="text-red-500 mt-1">{fieldState.error.message}</p>
             )}
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Saving...' : initialBlog ? 'Update Blog' : 'Publish Blog'}
+          </div>
+        )}
+      />
+
+      {blogContent.map((block) => (
+        <motion.div
+          key={block.id}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 border rounded-md"
+        >
+          <div className="flex items-center gap-4 mb-4">
+            <Select
+              value={block.type}
+              onValueChange={(value: ContentType) => handleChange(block.id, "type", value)}
+            >
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Select type">
+                  {block.type.toUpperCase()}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="h1">Heading 1</SelectItem>
+                <SelectItem value="h2">Heading 2</SelectItem>
+                <SelectItem value="h3">Heading 3</SelectItem>
+                <SelectItem value="h4">Heading 4</SelectItem>
+                <SelectItem value="h5">Heading 5</SelectItem>
+                <SelectItem value="h6">Heading 6</SelectItem>
+                <SelectItem value="p">Paragraph</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button
+              type="button"
+              variant={block.style.fontWeight === "bold" ? "default" : "outline"}
+              onClick={() => handleStyleChange(
+                block.id,
+                "fontWeight",
+                block.style.fontWeight === "bold" ? "normal" : "bold"
+              )}
+            >
+              B
             </Button>
-          </CardFooter>
-        </form>
-      </Card>
-    </motion.div>
+
+            <Select
+              value={block.style.textSize}
+              onValueChange={(value) => handleStyleChange(block.id, "textSize", value)}
+            >
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Text size" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="text-sm">Small</SelectItem>
+                <SelectItem value="text-md">Medium</SelectItem>
+                <SelectItem value="text-lg">Large</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => handleDeleteBlock(block.id)}
+            >
+              <Trash className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {block.type === "p" ? (
+            <Textarea
+              placeholder="Enter paragraph text..."
+              className={`w-full ${block.style.textSize} ${block.style.color} ${block.style.fontWeight === "bold" ? "font-bold" : ""}`}
+              value={block.text}
+              onChange={(e) => handleChange(block.id, "text", e.target.value)}
+            />
+          ) : (
+            <Input
+              placeholder={`Enter ${block.type} text...`}
+              className={`w-full ${block.style.textSize} ${block.style.color} ${block.style.fontWeight === "bold" ? "font-bold" : ""}`}
+              value={block.text}
+              onChange={(e) => handleChange(block.id, "text", e.target.value)}
+            />
+          )}
+
+          <div className="mt-2">
+            <Input
+              placeholder="Search color"
+              value={colorSearch}
+              onChange={(e) => setColorSearch(e.target.value)}
+              className="mb-2"
+            />
+            <div className="flex gap-2 overflow-x-auto py-2">
+              {filteredColors.map((color) => (
+                <button
+                key={color}
+                type="button"
+                className={`w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 ${color}`}
+                onClick={() => handleStyleChange(block.id, "color", color)}
+                aria-label={color}
+              >
+                <LoaderPinwheel />
+              </button>
+              
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      ))}
+
+      <div className="flex gap-4">
+        <Button type="button" onClick={() => handleAddBlock("h1")}>Add Heading</Button>
+        <Button type="button" onClick={() => handleAddBlock("p")}>Add Paragraph</Button>
+      </div>
+
+      <Button disabled={loading} type="submit" className="w-full">
+        {submitButtonText}
+      </Button>
+    </form>
   );
 };
