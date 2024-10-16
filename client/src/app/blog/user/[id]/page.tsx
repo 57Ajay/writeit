@@ -1,162 +1,90 @@
 "use client"
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { motion } from 'framer-motion';
+import { User, Clock, Edit } from 'lucide-react';
+import Link from 'next/link';
+import router from 'next/router';
 
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
-import Link from "next/link"
-import axios from "axios"
-import { motion } from "framer-motion"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useToast } from "@/hooks/use-toast"
-
-interface BlogContentBlock {
-  id: number
-  text: string
-  type: string
-  style: {
-    color: string
-    textSize: string
-    fontWeight: string
-  }
+interface Author {
+  id: string;
+  name: string;
 }
 
-interface BlogPost {
-  id: string
-  title: string
-  content: BlogContentBlock[]
-  published: boolean
-  authorId: string
+interface Blog {
+  id: string;
+  title: string;
+  content: string;
+  published: boolean;
+  authorId: string;
+  createdAt: string;
+  updatedAt: string;
+  author: Author;
 }
 
 interface UserBlogsResponse {
-  userBlogs: BlogPost[]
+  userBlogs: Blog[];
 }
 
-export default function UserBlogsPage() {
-  const [blogs, setBlogs] = useState<BlogPost[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const { id } = useParams()
-  const router = useRouter()
-  const { toast } = useToast()
-
+const UserBlogsPage: React.FC = () => {
+  const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { id } = router.query;
   useEffect(() => {
-    const fetchUserBlogs = async () => {
-      setIsLoading(true)
+    const fetchBlogs = async () => {
       try {
-        const response = await axios.get<UserBlogsResponse>(
-          `https://server.57ajay-u.workers.dev/api/v1/blog/get-by-user?id=${id}`
-        )
-        setBlogs(response.data.userBlogs)
+        const response = await axios.get<UserBlogsResponse>(`https://server.57ajay-u.workers.dev/api/v1/blog/get-by-user?id=${id}`);
+        setBlogs(response.data.userBlogs);
       } catch (error) {
-        console.error("Error fetching user blogs:", error)
-        toast({
-          title: "Error",
-          description: "Failed to fetch user blogs. Please try again.",
-          variant: "destructive",
-        })
+        console.error('Error fetching blogs:', error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    if (id) {
-      fetchUserBlogs()
-    }
-  }, [id, toast])
+    fetchBlogs();
+  }, [id]);
 
-  const renderContent = (content: BlogContentBlock[]) => {
-    return content.map((block) => {
-      const { color, textSize, fontWeight } = block.style
-
-      switch (block.type) {
-        case "h1":
-          return (
-            <h1
-              key={block.id}
-              className={`${color} ${textSize} ${fontWeight} mb-4`}
-            >
-              {block.text}
-            </h1>
-          )
-        case "p":
-          return (
-            <p
-              key={block.id}
-              className={`${color} ${textSize} ${fontWeight} mb-2`}
-            >
-              {block.text}
-            </p>
-          )
-        default:
-          return null
-      }
-    })
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 mt-12">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h1 className="text-3xl font-bold mb-8 text-center">User Blogs</h1>
-        {isLoading ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {[...Array(6)].map((_, index) => (
-              <Card key={index} className="w-full">
-                <CardHeader>
-                  <Skeleton className="h-6 w-2/3" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-4 w-full mb-2" />
-                  <Skeleton className="h-4 w-full mb-2" />
-                  <Skeleton className="h-4 w-2/3" />
-                </CardContent>
-                <CardFooter>
-                  <Skeleton className="h-10 w-full" />
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        ) : blogs.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {blogs.map((blog) => (
-              <motion.div
-                key={blog.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <Card className="w-full h-full flex flex-col">
-                  <CardHeader>
-                    <CardTitle className="text-xl font-semibold line-clamp-2">{blog.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex-grow">
-                    <div className="text-sm text-muted-foreground line-clamp-3">
-                      {renderContent(blog.content)}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      {blog.published ? "Published" : "Draft"}
-                    </span>
-                    <Button asChild variant="outline" size="sm">
-                      <Link href={`/blog/${blog.id}`}>Read More</Link>
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-xl text-muted-foreground">This user has not created any blogs yet.</p>
-        )}
-        <div className="mt-8 text-center">
-          <Button onClick={() => router.back()}>Go Back</Button>
-        </div>
-      </motion.div>
-    </div>
-  )
-}
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="container mx-auto px-4 py-8"
+    >
+      <h1 className="text-3xl font-bold mb-8">My Blogs</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {blogs.map((blog) => (
+          <motion.div
+            key={blog.id}
+            whileHover={{ scale: 1.05 }}
+            className="bg-white shadow-lg rounded-lg overflow-hidden"
+          >
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-2">{blog.title}</h2>
+              <p className="text-gray-600 mb-4">{blog.content.substring(0, 100)}...</p>
+              <div className="flex items-center text-sm text-gray-500 mb-2">
+                <User size={16} className="mr-2" />
+                <span>{blog.author.name}</span>
+              </div>
+              <div className="flex items-center text-sm text-gray-500 mb-4">
+                <Clock size={16} className="mr-2" />
+                <span>{new Date(blog.createdAt).toLocaleDateString()}</span>
+              </div>
+              <Link href={`/blog/edit/${blog.id}`} className="flex items-center text-blue-500 hover:underline">
+                <Edit size={16} className="mr-2" />
+                Edit Blog
+              </Link>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
+  );
+};
+
+export default UserBlogsPage;

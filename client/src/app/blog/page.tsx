@@ -1,36 +1,19 @@
-
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { useInView } from 'react-intersection-observer'
-import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Pagination } from "@/components/ui/pagination"
-import { ChevronLeft, ChevronRight, Calendar, User, Eye, Edit, UserCircle } from 'lucide-react'
 import { useAppSelector } from '@/redux/hooks'
+import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
+import MarkdownDisplay from '@/components/MarkdownDisplay'
+import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 
-type StyleObject = {
-  color?: string
-  textSize?: string
-  fontSize?: string
-  fontWeight?: string
-}
-
-type ContentItem = {
-  id: number | string
-  text?: string
-  type: string
-  style?: StyleObject
-  styles?: StyleObject
-  content?: string
-}
-
-type BlogPost = {
+interface Blog {
   id: string
   title: string
-  content: ContentItem[]
+  content: string
   published: boolean
   authorId: string
   createdAt: string
@@ -41,151 +24,125 @@ type BlogPost = {
   }
 }
 
-type BlogResponse = {
-  posts: BlogPost[]
+interface BlogsResponse {
+  posts: Blog[]
   currentPage: number
   totalPages: number
   totalBlogs: number
 }
 
-export default function BlogsPage() {
-  const [blogs, setBlogs] = useState<BlogPost[]>([])
+export default function Blogs() {
+  const [blogs, setBlogs] = useState<Blog[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
   const user = useAppSelector((state) => state.user.user)
 
-  useEffect(() => {
-    fetchBlogs(currentPage)
-    setCurrentUserId(user.id)
-  }, [currentPage, user.id])
-
   const fetchBlogs = async (page: number) => {
+    setIsLoading(true)
     try {
-      const response = await fetch(`https://server.57ajay-u.workers.dev/api/v1/blog/get-all?page=${page}&limit=6`)
-      const data: BlogResponse = await response.json()
-      setBlogs(data.posts)
-      setTotalPages(data.totalPages)
+      const response = await axios.get<BlogsResponse>(
+        `https://server.57ajay-u.workers.dev/api/v1/blog/get-all?page=${page}&limit=10`,
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        }
+      )
+      setBlogs(response.data.posts)
+      setCurrentPage(response.data.currentPage)
+      setTotalPages(response.data.totalPages)
     } catch (error) {
       console.error('Error fetching blogs:', error)
+      alert('Failed to fetch blogs. Please try again.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  return (
-    <div className="container mx-auto py-8 mt-12">
-      <h1 className="text-4xl font-bold mb-8 text-center">Blog Posts</h1>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {blogs.map((blog, index) => (
-          <BlogCard key={blog.id} blog={blog} index={index} currentUserId={currentUserId} />
-        ))}
-      </div>
-      <div className="mt-8 flex justify-center">
-        <Pagination>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm">
-            Page {currentPage} of {totalPages}
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </Pagination>
-      </div>
-    </div>
-  )
-}
+  useEffect(() => {
+    fetchBlogs(currentPage)
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, user.token])
 
-function BlogCard({ blog, index, currentUserId }: { blog: BlogPost; index: number; currentUserId: string | null }) {
-  const [ref, inView] = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  })
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage)
+    }
+  }
 
-  const cardVariants = {
-    hidden: { opacity: 0, y: 50 },
-    visible: { opacity: 1, y: 0 },
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
   }
 
   return (
     <motion.div
-      ref={ref}
-      initial="hidden"
-      animate={inView ? "visible" : "hidden"}
-      variants={cardVariants}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="container mx-auto px-4 py-8"
     >
-      <Card className="h-full flex flex-col">
-        <CardHeader>
-          <CardTitle>{blog.title}</CardTitle>
-          <div className="flex items-center text-sm text-muted-foreground">
-            <User className="mr-1 h-3 w-3" />
-            {blog.author.name}
-            <span className="mx-1">•</span>
-            <Calendar className="mr-1 h-3 w-3" />
-            {new Date(blog.createdAt).toLocaleDateString()}
-          </div>
-        </CardHeader>
-        <CardContent className="flex-grow">
-          {blog.content.slice(0, 2).map((item, i) => {
-            const Element = item.type as keyof JSX.IntrinsicElements
-            const style: StyleObject = { ...item.style, ...item.styles }
-            const text = item.text || item.content || ''
-            
-            return (
-              <Element
-                key={item.id}
-                className={`
-                  ${style.color ?? ''}
-                  ${style.textSize ?? style.fontSize ?? ''}
-                  ${style.fontWeight ?? ''}
-                  ${i > 0 ? 'mt-2' : ''}
-                `.trim()}
-              >
-                {text}
-              </Element>
-            )
-          })}
-          {blog.content.length > 2 && (
-            <p className="mt-2 text-sm text-muted-foreground">
-              ... (more content available)
-            </p>
-          )}
-        </CardContent>
-        <CardFooter className="flex justify-between">
-          <Link href={`/blog/${blog.id}`} passHref>
-            <Button variant="outline" size="sm">
-              <Eye className="mr-2 h-4 w-4" />
-              View
-            </Button>
-          </Link>
-          {currentUserId === blog.authorId ? (
-            <Link href={`/blog/edit/${blog.id}`} passHref>
-              <Button variant="outline" size="sm">
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
-              </Button>
-            </Link>
-          ) : (
-            <Link href={`/blog/user/${blog.author.id}`} passHref>
-              <Button variant="outline" size="sm">
-                <UserCircle className="mr-2 h-4 w-4" />
-                Author
-              </Button>
-            </Link>
-          )}
-        </CardFooter>
-      </Card>
+      <h1 className="text-3xl font-bold mb-6 mt-12">All Blogs</h1>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {blogs.map((blog) => (
+          <Card key={blog.id} className="flex flex-col md:flex-row border border-gray-200 dark:border-gray-700 shadow-lg rounded-lg transition-transform transform hover:scale-105">
+            <div className="flex-shrink-0 p-4 bg-gray-100 dark:bg-gray-800 rounded-l-lg md:w-1/3 flex flex-col justify-between">
+              <div>
+                <div className="text-sm text-gray-600 dark:text-gray-300">
+                  By {blog.author.name}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  {new Date(blog.createdAt).toLocaleDateString()}
+                </div>
+              </div>
+            </div>
+            <div className="flex-grow p-4 flex flex-col justify-between">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">{blog.title}</CardTitle>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                <MarkdownDisplay content={blog.content.slice(0, 150) + '...'} />
+              </CardContent>
+              <CardFooter className="flex justify-between items-center">
+                <div className="space-x-2">
+                  <Button onClick={() => router.push(`/blog/${blog.id}`)}>View</Button>
+                  {blog.authorId === user.id && (
+                    <Button variant="outline" onClick={() => router.push(`/edit/${blog.id}`)}>
+                      Edit
+                    </Button>
+                  )}
+                </div>
+              </CardFooter>
+            </div>
+          </Card>
+        ))}
+      </div>
+      <div className="flex justify-center items-center mt-8 space-x-4">
+        <Button
+          variant="outline"
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          <ChevronLeft className="h-4 w-4 mr-2" />
+          Previous
+        </Button>
+        <span className="text-lg font-semibold">
+          Page {currentPage} of {totalPages}
+        </span>
+        <Button
+          variant="outline"
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          Next
+          <ChevronRight className="h-4 w-4 ml-2" />
+        </Button>
+      </div>
     </motion.div>
   )
 }
