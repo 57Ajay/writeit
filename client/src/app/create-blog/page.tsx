@@ -17,7 +17,9 @@ export default function CreateBlog() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const user = useAppSelector((state) => state.user.user)
-
+  if (user.id === ""){
+    router.push('/user/signin')
+  }
   const handleCreateBlog = async () => {
     if (!title || !content) {
       alert('Please fill in both title and content')
